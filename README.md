@@ -10,5 +10,5 @@ Insertion of 30M rows, split in 1M inserts with 100k blocks. Result is the best 
 |                      | LZ4 | no compression |
 |----------------------|-----|----------------|
 | chconn V2            | 37s | 106s           |
-| chconn V3 (snapshot) | 23s | 92s            |
+| chconn V3 (snapshot) | 22s | 89s            |
 | ch-go                | 21s | 78s            |

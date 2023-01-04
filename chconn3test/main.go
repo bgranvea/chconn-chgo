@@ -39,12 +39,15 @@ func main() {
 
 	cols := make([]column.ColumnBasic, 0)
 	for _, c := range arrCols {
+		c.SetWriteBufferSize(blockSize)
 		cols = append(cols, c)
 	}
 	for _, c := range intCols {
+		c.SetWriteBufferSize(blockSize)
 		cols = append(cols, c)
 	}
 	for _, c := range strCols {
+		c.SetWriteBufferSize(blockSize)
 		cols = append(cols, c)
 	}
 
@@ -58,10 +61,8 @@ func main() {
 	blockRows := 0
 	insertRows := 0
 	for totalRows := 0; totalRows < totalSize; totalRows++ {
-		arrCols[0].AppendLen(2)
-		arrCols[0].AppendItem(1, 2)
-		arrCols[1].AppendLen(3)
-		arrCols[1].AppendItem(1, 2, 3)
+		arrCols[0].Append([]int64{1, 2})
+		arrCols[1].Append([]int64{1, 2, 3})
 		intCols[0].Append(0)
 		intCols[1].Append(0)
 		intCols[2].Append(0)
