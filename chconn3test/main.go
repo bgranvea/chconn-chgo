@@ -2,17 +2,33 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/vahid-sohrabloo/chconn/v3"
 	"github.com/vahid-sohrabloo/chconn/v3/column"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
 
 func main() {
-	cfg, err := chconn.ParseConfig(os.Getenv("CLICKHOUSE_DSN"))
+	server := flag.String("server", "clickhouse", "clickhouse server")
+	port := flag.Int("port", 9000, "clickhouse port")
+	db := flag.String("db", "default", "clickhouse database")
+	user := flag.String("user", "default", "clickhouse user")
+	password := flag.String("password", "", "clickhouse password")
+	compression := flag.String("compression", "", "clickhouse compression")
+	totalSize := flag.Int("rows", 30_000_000, "total rows to insert")
+	insertSize := flag.Int("insert", 1_000_000, "insert size")
+	blockSize := flag.Int("block", 100_000, "block size")
+	flag.Parse()
+
+	dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s compress=%s", *server, *port, *db, *user, *compression)
+	if *password != "" {
+		dsn = fmt.Sprintf("%s password=%s", dsn, *password)
+	}
+
+	cfg, err := chconn.ParseConfig(dsn)
 	checkError(err)
 
 	conn, err := chconn.ConnectConfig(context.Background(), cfg)
@@ -27,10 +43,6 @@ func main() {
 		repeat(10, "str", " Nullable(String)")))
 	checkError(err)
 
-	blockSize := 100_000
-	insertSize := 1_000_000
-	totalSize := 30_000_000
-
 	sql := fmt.Sprintf("INSERT INTO bench (%s,%s,%s) VALUES", repeat(2, "arr", ""), repeat(20, "int", ""), repeat(10, "str", ""))
 
 	arrCols := arrayColumns(2)
@@ -39,30 +51,31 @@ func main() {
 
 	cols := make([]column.ColumnBasic, 0)
 	for _, c := range arrCols {
-		c.SetWriteBufferSize(blockSize)
+		c.SetWriteBufferSize(*blockSize)
 		cols = append(cols, c)
 	}
 	for _, c := range intCols {
-		c.SetWriteBufferSize(blockSize)
+		c.SetWriteBufferSize(*blockSize)
 		cols = append(cols, c)
 	}
 	for _, c := range strCols {
-		c.SetWriteBufferSize(blockSize)
+		c.SetWriteBufferSize(*blockSize)
 		cols = append(cols, c)
 	}
 
 	stmt, err := conn.InsertStream(context.Background(), sql)
 	checkError(err)
 
-	log.Printf("Insert %d rows", totalSize)
-
 	start := time.Now()
+
+	arrData0 := []int64{1, 2}
+	arrData1 := []int64{1, 2, 3}
 
 	blockRows := 0
 	insertRows := 0
-	for totalRows := 0; totalRows < totalSize; totalRows++ {
-		arrCols[0].Append([]int64{1, 2})
-		arrCols[1].Append([]int64{1, 2, 3})
+	for totalRows := 0; totalRows < *totalSize; totalRows++ {
+		arrCols[0].Append(arrData0)
+		arrCols[1].Append(arrData1)
 		intCols[0].Append(0)
 		intCols[1].Append(0)
 		intCols[2].Append(0)
@@ -97,16 +110,14 @@ func main() {
 		blockRows++
 		insertRows++
 
-		if insertRows == insertSize {
+		if insertRows == *insertSize {
 			if blockRows > 0 {
-				log.Printf("Write last block")
 				err = stmt.Write(context.Background(), cols...)
 				checkError(err)
 
 				blockRows = 0
 			}
 
-			log.Printf("Flush")
 			err = stmt.Flush(context.Background())
 			checkError(err)
 
@@ -117,8 +128,7 @@ func main() {
 			insertRows = 0
 		}
 
-		if blockRows == blockSize {
-			log.Printf("Write block")
+		if blockRows == *blockSize {
 			err = stmt.Write(context.Background(), cols...)
 			checkError(err)
 
@@ -128,11 +138,9 @@ func main() {
 
 	// last block
 	if blockRows > 0 {
-		log.Printf("Write last block")
 		err = stmt.Write(context.Background(), cols...)
 		checkError(err)
 
-		log.Printf("Flush")
 		err = stmt.Flush(context.Background())
 		checkError(err)
 	}

@@ -1,14 +1,44 @@
 # Benchmark of Go Clickhouse drivers
 
-https://github.com/vahid-sohrabloo/chconn
+Comparison of the insertion of 30M rows, split in 1M inserts with 100k blocks.
+
+https://github.com/vahid-sohrabloo/chconn (V2 and V3)
 https://github.com/ClickHouse/ch-go
 
-Clickhouse server running on a remote machine (Gigabits LAN), with latest version (22.12).
+To run benchmark with docker-compose:
 
-Insertion of 30M rows, split in 1M inserts with 100k blocks. Result is the best of 3 runs.
+`docker-compose -f docker-compose-local.yml up`
 
-|                      | LZ4 | no compression |
-|----------------------|-----|----------------|
-| chconn V2            | 37s | 106s           |
-| chconn V3 (snapshot) | 22s | 89s            |
-| ch-go                | 21s | 78s            |
+To run benchmark with Clickhouse on a different machine:
+
+Server machine: `docker-compose -f docker-compose-server.yml up`
+
+Client machine: `CLICKHOUSE_SERVER=xxxx docker-compose -f docker-compose-client.yml up`
+
+# Results
+
+| Driver               | Time (s) |
+|----------------------|----------|
+| ch-go                | 40       |
+| chconn V3 (snapshot) | 29       |
+| chconn V2            | 73       |
+
+# Results on a remote Clickhouse
+
+Clickhouse server running on a remote machine with a Gigabits LAN.
+
+No compression:
+
+| Driver               | Time (s) |
+|----------------------|----------|
+| ch-go                | 92       |
+| chconn V3 (snapshot) | 88       |
+| chconn V2            | 110      |
+
+With LZ4 compression (note: compression results are biased as we always send the same row):
+
+| Driver               | Time (s) |
+|----------------------|----------|
+| ch-go                | 33       |
+| chconn V3 (snapshot) | 27       |
+| chconn V2            | 52       |

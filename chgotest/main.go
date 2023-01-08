@@ -2,23 +2,34 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/ClickHouse/ch-go"
 	"github.com/ClickHouse/ch-go/proto"
 	"io"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
 
 func main() {
+	server := flag.String("server", "clickhouse", "clickhouse server")
+	port := flag.Int("port", 9000, "clickhouse port")
+	db := flag.String("db", "default", "clickhouse database")
+	user := flag.String("user", "default", "clickhouse user")
+	password := flag.String("password", "", "clickhouse password")
+	compression := flag.String("compression", "", "clickhouse compression")
+	totalSize := flag.Int("rows", 30_000_000, "total rows to insert")
+	insertSize := flag.Int("insert", 1_000_000, "insert size")
+	blockSize := flag.Int("block", 100_000, "block size")
+	flag.Parse()
+
 	client, err := ch.Dial(context.Background(), ch.Options{
-		Address:     os.Getenv("CLICKHOUSE_URL"),
-		User:        os.Getenv("CLICKHOUSE_USERNAME"),
-		Password:    os.Getenv("CLICKHOUSE_PASSWORD"),
-		Database:    os.Getenv("CLICKHOUSE_DB"),
-		Compression: compression(),
+		Address:     fmt.Sprintf("%s:%d", *server, *port),
+		User:        *user,
+		Password:    *password,
+		Database:    *db,
+		Compression: compressionValue(*compression),
 	})
 	checkError(err)
 
@@ -30,10 +41,6 @@ func main() {
 		repeat(20, "int", " Nullable(Int64)"),
 		repeat(10, "str", " Nullable(String)"))})
 	checkError(err)
-
-	blockSize := 100_000
-	insertSize := 1_000_000
-	totalSize := 30_000_000
 
 	arrCols := arrayColumns(2)
 	intCols := intColumns(20)
@@ -50,13 +57,12 @@ func main() {
 		cols = append(cols, proto.InputColumn{Name: fmt.Sprintf("str%d", i), Data: strCols[i]})
 	}
 
-	log.Printf("Insert %d rows", totalSize)
-
 	start := time.Now()
 
-	for totalRows := 0; totalRows < totalSize; {
-		log.Printf("New insert")
+	arrData0 := []int64{1, 2}
+	arrData1 := []int64{1, 2, 3}
 
+	for totalRows := 0; totalRows < *totalSize; {
 		insertRows := 0
 		proto.Input(cols).Reset()
 
@@ -66,9 +72,9 @@ func main() {
 			OnInput: func(ctx context.Context) error {
 				proto.Input(cols).Reset()
 
-				for blockRows := 0; blockRows < blockSize; blockRows++ {
-					arrCols[0].Append([]int64{1, 2})
-					arrCols[1].Append([]int64{1, 2, 3})
+				for blockRows := 0; blockRows < *blockSize; blockRows++ {
+					arrCols[0].Append(arrData0)
+					arrCols[1].Append(arrData1)
 					intCols[0].Append(proto.Nullable[int64]{Set: true, Value: 0})
 					intCols[1].Append(proto.Nullable[int64]{Set: true, Value: 0})
 					intCols[2].Append(proto.Nullable[int64]{Set: true, Value: 0})
@@ -102,13 +108,11 @@ func main() {
 
 					insertRows++
 					totalRows++
-					if insertRows == insertSize || totalRows == totalSize {
-						log.Printf("Write last block")
+					if insertRows == *insertSize || totalRows == *totalSize {
 						return io.EOF
 					}
 				}
 
-				log.Printf("Write block")
 				return nil
 			},
 		})
@@ -160,8 +164,8 @@ func strColumns(n int) []*proto.ColNullable[string] {
 	return res
 }
 
-func compression() ch.Compression {
-	switch os.Getenv("CLICKHOUSE_COMPRESSION") {
+func compressionValue(str string) ch.Compression {
+	switch str {
 	case "lz4":
 		return ch.CompressionLZ4
 	case "zstd":

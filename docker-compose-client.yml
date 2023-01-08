@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+
+  benchmark:
+    build:
+      context: .
+      args:
+        - PROXY=${PROXY:-}
+    environment:
+      CLICKHOUSE_SERVER: "${CLICKHOUSE_SERVER}"
+
+    command: ["/benchmark_remote.sh"]

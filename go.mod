@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/ClickHouse/ch-go v0.51.0
 	github.com/vahid-sohrabloo/chconn/v2 v2.2.0
-	github.com/vahid-sohrabloo/chconn/v3 v3.0.0-20230103131329-32179ccc468f
+	github.com/vahid-sohrabloo/chconn/v3 v3.0.0-20230105103705-fc149935b9b5
 )
 
 require (

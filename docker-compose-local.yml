@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+
+  benchmark:
+    depends_on:
+      - clickhouse
+    build:
+      context: .
+      args:
+        - PROXY=${PROXY:-}
+
+    command: ["/benchmark_local.sh"]
