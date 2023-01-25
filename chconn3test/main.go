@@ -21,9 +21,13 @@ func main() {
 	totalSize := flag.Int("rows", 30_000_000, "total rows to insert")
 	insertSize := flag.Int("insert", 1_000_000, "insert size")
 	blockSize := flag.Int("block", 100_000, "block size")
+	writeBuffer := flag.Bool("write-buffer", true, "write buffer")
 	flag.Parse()
 
-	dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s compress=%s", *server, *port, *db, *user, *compression)
+	dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s use_write_buffer=%t", *server, *port, *db, *user, *writeBuffer)
+	if *compression != "" {
+		dsn = fmt.Sprintf("%s compress=%s", dsn, *compression)
+	}
 	if *password != "" {
 		dsn = fmt.Sprintf("%s password=%s", dsn, *password)
 	}
@@ -132,6 +136,10 @@ func main() {
 			err = stmt.Write(context.Background(), cols...)
 			checkError(err)
 
+			for _, c := range cols {
+				c.Reset()
+			}
+
 			blockRows = 0
 		}
 	}
@@ -140,6 +148,10 @@ func main() {
 	if blockRows > 0 {
 		err = stmt.Write(context.Background(), cols...)
 		checkError(err)
+
+		for _, c := range cols {
+			c.Reset()
+		}
 
 		err = stmt.Flush(context.Background())
 		checkError(err)

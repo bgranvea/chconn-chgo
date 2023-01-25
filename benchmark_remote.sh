@@ -12,10 +12,16 @@ echo "Running chgotest"
 
 sleep 5
 
-echo "Running chconn3test"
-/chconn3test -server "${CLICKHOUSE_SERVER}"
-/chconn3test -server "${CLICKHOUSE_SERVER}"
-/chconn3test -server "${CLICKHOUSE_SERVER}"
+echo "Running chconn3test with write buffer"
+/chconn3test -server "${CLICKHOUSE_SERVER}" -write-buffer=true
+/chconn3test -server "${CLICKHOUSE_SERVER}" -write-buffer=true
+/chconn3test -server "${CLICKHOUSE_SERVER}" -write-buffer=true
+
+sleep 5
+echo "Running chconn3test without write buffer"
+/chconn3test -server "${CLICKHOUSE_SERVER}" -write-buffer=false
+/chconn3test -server "${CLICKHOUSE_SERVER}" -write-buffer=false
+/chconn3test -server "${CLICKHOUSE_SERVER}" -write-buffer=false
 
 sleep 5
 

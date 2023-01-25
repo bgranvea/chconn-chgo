@@ -17,11 +17,13 @@ Client machine: `CLICKHOUSE_SERVER=xxxx docker-compose -f docker-compose-client.
 
 # Results
 
-| Driver               | Time (s) |
-|----------------------|----------|
-| ch-go                | 40       |
-| chconn V3 (snapshot) | 29       |
-| chconn V2            | 73       |
+| Driver                                   | Time (s) |
+|------------------------------------------|----------|
+| ch-go                                    | 37       |
+| chconn V3 (fc149935b9b5) (old)           | 29       |
+| chconn V3 (3dcec8a89d76) write buffer    | 31       |
+| chconn V3 (3dcec8a89d76) no write buffer | 30       |
+| chconn V2                                | 65       |
 
 # Results on a remote Clickhouse
 
@@ -29,16 +31,19 @@ Clickhouse server running on a remote machine with a Gigabits LAN.
 
 No compression:
 
-| Driver               | Time (s) |
-|----------------------|----------|
-| ch-go                | 92       |
-| chconn V3 (snapshot) | 88       |
-| chconn V2            | 110      |
+| Driver                                   | Time (s) |
+|------------------------------------------|----------|
+| ch-go                                    | 93       |
+| chconn V3 (fc149935b9b5) (old)           | 88       |
+| chconn V3 (3dcec8a89d76) write buffer    | 98       |
+| chconn V3 (3dcec8a89d76) no write buffer | 96       |
+| chconn V2                                | 113      |
 
 With LZ4 compression (note: compression results are biased as we always send the same row):
 
-| Driver               | Time (s) |
-|----------------------|----------|
-| ch-go                | 33       |
-| chconn V3 (snapshot) | 27       |
-| chconn V2            | 52       |
+| Driver                                            | Time (s) |
+|---------------------------------------------------|----------|
+| ch-go                                             | 35       |
+| chconn V3 (fc149935b9b5) (old)                    | 27       |
+| chconn V3 (3dcec8a89d76) (mandatory write buffer) | 32       |
+| chconn V2                                         | 57       |

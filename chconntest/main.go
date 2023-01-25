@@ -23,7 +23,10 @@ func main() {
 	blockSize := flag.Int("block", 100_000, "block size")
 	flag.Parse()
 
-	dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s compress=%s", *server, *port, *db, *user, *compression)
+	dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s", *server, *port, *db, *user)
+	if *compression != "" {
+		dsn = fmt.Sprintf("%s compress=%s", dsn, *compression)
+	}
 	if *password != "" {
 		dsn = fmt.Sprintf("%s password=%s", dsn, *password)
 	}
